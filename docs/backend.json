@@ -1,0 +1,137 @@
+{
+  "entities": {
+    "ShoppingList": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ShoppingList",
+      "type": "object",
+      "description": "Represents a shopping list containing items to purchase.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the shopping list."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the shopping list."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the shopping list was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the shopping list was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ShoppingListItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ShoppingListItem",
+      "type": "object",
+      "description": "Represents an item within a shopping list.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the shopping list item."
+        },
+        "shoppingListId": {
+          "type": "string",
+          "description": "Reference to ShoppingList. (Relationship: ShoppingList 1:N ShoppingListItem)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the item."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity of the item needed."
+        },
+        "plannedValue": {
+          "type": "number",
+          "description": "The initially planned value/price of the item."
+        },
+        "actualValue": {
+          "type": "number",
+          "description": "The actual value/price of the item after purchase.",
+          "format": "number"
+        },
+        "purchased": {
+          "type": "boolean",
+          "description": "Indicates whether the item has been purchased."
+        }
+      },
+      "required": [
+        "id",
+        "shoppingListId",
+        "name",
+        "quantity",
+        "plannedValue",
+        "actualValue",
+        "purchased"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/shoppingLists/{shoppingListId}",
+        "definition": {
+          "entityName": "ShoppingList",
+          "schema": {
+            "$ref": "#/backend/entities/ShoppingList"
+          },
+          "description": "Stores shopping lists for each user.  Path-based ownership ensures only the user can access their lists.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the shopping list."
+            },
+            {
+              "name": "shoppingListId",
+              "description": "The unique ID of the shopping list."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/shoppingLists/{shoppingListId}/items/{itemId}",
+        "definition": {
+          "entityName": "ShoppingListItem",
+          "schema": {
+            "$ref": "#/backend/entities/ShoppingListItem"
+          },
+          "description": "Stores individual shopping list items. Path-based ownership ensures only the user can access items within their lists.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the shopping list."
+            },
+            {
+              "name": "shoppingListId",
+              "description": "The ID of the shopping list that contains the item."
+            },
+            {
+              "name": "itemId",
+              "description": "The unique ID of the shopping list item."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the Mercado app's requirements, focusing on simplicity, security, and scalability.  The structure leverages path-based ownership for user-specific data (shopping lists and items) and denormalization to avoid complex authorization rules. User authentication will be handled via email/password (sign-in only) and anonymous login.\n\n`Authorization Independence:` Achieved by using path-based ownership `/users/{userId}/shoppingLists/{shoppingListId}`. Rules can easily check `request.auth.uid == userId` without needing to read parent documents.  Shopping list items inherit authorization via the same path-based ownership `/users/{userId}/shoppingLists/{shoppingListId}/items/{itemId}`.\n\n`QAPs Support:` The design enables secure `list` operations. Listing shopping lists is restricted to the owning user (path-based ownership), preventing unauthorized access. Listing shopping list items is similarly restricted.\n"
+  }
+}
